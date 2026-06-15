@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
 
-const SB_URL = 'https://ltuhcgonetthvgzyhzea.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWhjZ29uZXR0aHZnenloemVhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTk0NTg1OCwiZXhwIjoyMDg3NTIxODU4fQ.y3hjW8IaFGz8ELPlumNxDTzFQTvCJC8AgDbS0EWmCMA';
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const CAT_ICONS: Record<string, string> = {
   Music: "🎵", Theater: "🎭", Comedy: "😄", Dance: "💃",
