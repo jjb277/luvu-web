@@ -8,7 +8,7 @@ const FAQ = [
   { q: "Waarom zie ik geen events in mijn buurt?", a: "Controleer of je postcode of stad correct is ingesteld. Vergroot eventueel de zoekradius via de filteropties." },
   { q: "Hoe werk de aanbevelingen?", a: "LUVU houdt rekening met jouw favoriete categorieën, eerder gelikte events en jouw locatie om de beste matches te tonen." },
   { q: "Kan ik de app gebruiken zonder account?", a: "Ja, je kunt LUVU volledig gebruiken zonder account. Een account is alleen nodig voor extra functies zoals ticketing." },
-  { q: "Hoe verwijder ik mijn gegevens?", a: "Stuur een e-mail naar info@luvu.app met de vermelding 'Verwijder mijn gegevens' en we verwerken je aanvraag binnen 30 dagen." },
+  { q: "Hoe verwijder ik mijn gegevens?", a: "Stuur een e-mail naar luvulive1@gmail.com met de vermelding 'Verwijder mijn gegevens' en we verwerken je aanvraag binnen 30 dagen." },
 ];
 
 export default function SupportPage() {
@@ -31,10 +31,10 @@ export default function SupportPage() {
           <p className="text-sm mb-4" style={{ color: "rgba(232,240,240,0.65)" }}>
             Stuur ons een e-mail en we reageren binnen 2 werkdagen.
           </p>
-          <a href="mailto:info@luvu.app"
+          <a href="mailto:luvulive1@gmail.com"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-80"
             style={{ background: "#4c6f71", color: "#c9d3d4" }}>
-            ✉ info@luvu.app
+            ✉ luvulive1@gmail.com
           </a>
         </div>
 
