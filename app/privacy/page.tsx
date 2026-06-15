@@ -40,11 +40,11 @@ export default function PrivacyPage() {
           },
           {
             title: "6. Jouw rechten",
-            body: `Je hebt het recht om:\n• Inzage te vragen in de gegevens die we over jou bewaren\n• Onjuiste gegevens te laten corrigeren\n• Je gegevens te laten verwijderen\n• Je toestemming voor gegevensverwerking in te trekken\n\nNeem contact op via info@luvu.app.`
+            body: `Je hebt het recht om:\n• Inzage te vragen in de gegevens die we over jou bewaren\n• Onjuiste gegevens te laten corrigeren\n• Je gegevens te laten verwijderen\n• Je toestemming voor gegevensverwerking in te trekken\n\nNeem contact op via luvulive1@gmail.com.`
           },
           {
             title: "7. Contact",
-            body: "Voor vragen over dit privacybeleid kun je ons bereiken via info@luvu.app."
+            body: "Voor vragen over dit privacybeleid kun je ons bereiken via luvulive1@gmail.com."
           },
         ].map((section) => (
           <section key={section.title} className="mb-8">

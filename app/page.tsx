@@ -129,7 +129,7 @@ export default function Home() {
           <span>·</span>
           <Link href="/support" className="hover:underline">Support</Link>
           <span>·</span>
-          <a href="mailto:info@luvu.app" className="hover:underline">info@luvu.app</a>
+          <a href="mailto:luvulive1@gmail.com" className="hover:underline">luvulive1@gmail.com</a>
         </div>
         <p>© {new Date().getFullYear()} LUVU. Alle rechten voorbehouden.</p>
       </footer>
