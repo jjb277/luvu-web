@@ -1,126 +1,144 @@
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 
-const FEATURES = [
-  { icon: "🎭", title: "Concerts & theater", desc: "Van indie rock tot opera — ontdek wat er speelt in jouw streek." },
-  { icon: "📍", title: "Dichtbij jou", desc: "Events op maat van jouw locatie, tot op de km nauwkeurig." },
-  { icon: "✨", title: "Gepersonaliseerd", desc: "LUVU leert jouw smaak kennen en toont wat écht bij jou past." },
-  { icon: "🎟️", title: "Alles op één plek", desc: "Concerts, comedy, dans, familievoorstellingen — één app voor alles." },
+export const revalidate = 3600;
+
+const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+const CAT_ICONS: Record<string, string> = {
+  Music: "🎵", Theater: "🎭", Comedy: "😄", Dance: "💃",
+  Family: "👨‍👩‍👧", Film: "🎬", Other: "✨",
+};
+
+const CATEGORIES = [
+  { label: "Muziek", value: "Music", icon: "🎵" },
+  { label: "Theater", value: "Theater", icon: "🎭" },
+  { label: "Comedy", value: "Comedy", icon: "😄" },
+  { label: "Dans", value: "Dance", icon: "💃" },
+  { label: "Familie", value: "Family", icon: "👨‍👩‍👧" },
+  { label: "Film", value: "Film", icon: "🎬" },
 ];
 
-const CATEGORIES = ["🎵 Muziek", "🎭 Theater", "😄 Comedy", "💃 Dans", "👨‍👩‍👧 Familie", "🎬 Film"];
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric", month: "short" });
+}
 
-export default function Home() {
+function formatPrice(price: number | null) {
+  if (!price) return "Gratis";
+  return `€ ${price.toFixed(2).replace(".", ",")}`;
+}
+
+export default async function Home() {
+  const sb = createClient(SB_URL, SB_KEY);
+
+  // Fetch 9 featured upcoming events
+  const { data: featured } = await sb
+    .from("events")
+    .select("id, title, short_tagline, category, event_date, venue_name, city, base_price, primary_image_url")
+    .in("visibility_status", ["live", "public"])
+    .gt("event_date", new Date().toISOString())
+    .not("primary_image_url", "is", null)
+    .order("event_date", { ascending: true })
+    .limit(9);
+
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #2a3f40 0%, #1a2a2b 100%)" }}>
-
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-5 max-w-5xl mx-auto">
+      <nav className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm" style={{ background: "#4c6f71", color: "#c9d3d4" }}>
-            L
-          </div>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm" style={{ background: "#4c6f71", color: "#c9d3d4" }}>L</div>
           <span className="font-bold tracking-widest text-sm" style={{ color: "#c9d3d4" }}>LUVU</span>
         </div>
         <div className="flex items-center gap-6 text-sm" style={{ color: "rgba(201,211,212,0.6)" }}>
+          <Link href="/saved" className="hover:opacity-100 transition-opacity flex items-center gap-1">♥ Bewaard</Link>
           <Link href="/support" className="hover:opacity-100 transition-opacity">Support</Link>
           <Link href="/privacy" className="hover:opacity-100 transition-opacity">Privacy</Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 pt-16 pb-24 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-8"
-          style={{ background: "rgba(201,211,212,0.1)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.2)" }}>
-          ✦ Binnenkort beschikbaar op iOS & Android
-        </div>
+      <main className="max-w-6xl mx-auto px-6 pb-24">
+        {/* Hero */}
+        <div className="pt-10 pb-10">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-3 leading-tight" style={{ color: "#e8f0f0" }}>
+            Ontdek events<br />
+            <span style={{ color: "#c9d3d4" }}>in jouw buurt</span>
+          </h1>
+          <p className="text-base max-w-lg mb-8" style={{ color: "rgba(232,240,240,0.55)" }}>
+            Concerts, theater, comedy, dans en meer — gepersonaliseerd op jouw locatie.
+          </p>
 
-        <h1 className="text-5xl sm:text-6xl font-bold mb-6 leading-tight" style={{ color: "#e8f0f0" }}>
-          Jouw cultuurapp
-          <br />
-          <span style={{ color: "#c9d3d4" }}>voor België</span>
-        </h1>
-
-        <p className="text-lg max-w-xl mx-auto mb-10 leading-relaxed" style={{ color: "rgba(232,240,240,0.65)" }}>
-          Ontdek concerts, theater, comedy, dans en meer — gepersonaliseerd op jouw smaak en locatie.
-          Swipe, ontdek, geniet.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <div className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm cursor-default"
-            style={{ background: "#c9d3d4", color: "#2a3f40" }}>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-            </svg>
-            Binnenkort op App Store
-          </div>
-          <div className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm cursor-default"
-            style={{ background: "rgba(201,211,212,0.12)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.25)" }}>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
-              <path d="M3.18 23.76c.3.16.65.19.98.08l12.54-7.25-2.54-2.54-10.98 9.71zM.54 1.18C.2 1.54 0 2.1 0 2.83v18.34c0 .73.2 1.29.54 1.65l.09.08 10.27-10.27v-.24L.63 1.1l-.09.08zM20.9 10.66l-2.93-1.7-2.84 2.84 2.84 2.84 2.96-1.71c.84-.49.84-1.28-.03-1.77zM4.16.24L16.7 7.49l-2.54 2.54L3.62.26c.15-.11.34-.1.54-.02z"/>
-            </svg>
-            Binnenkort op Google Play
+          {/* Category pills */}
+          <div className="flex flex-wrap gap-2 mb-8">
+            {CATEGORIES.map((c) => (
+              <Link
+                key={c.value}
+                href={`/events?cat=${c.value}`}
+                className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:opacity-90"
+                style={{ background: "rgba(201,211,212,0.1)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.2)" }}
+              >
+                {c.icon} {c.label}
+              </Link>
+            ))}
+            <Link
+              href="/events"
+              className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:opacity-90"
+              style={{ background: "rgba(76,111,113,0.35)", color: "#c9d3d4", border: "1px solid rgba(76,111,113,0.5)" }}
+            >
+              Alle events →
+            </Link>
           </div>
         </div>
-      </section>
 
-      {/* Events CTA */}
-      <section className="max-w-5xl mx-auto px-6 pb-16 text-center">
-        <Link href="/events"
-          className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-base transition-opacity hover:opacity-80"
-          style={{ background: "rgba(201,211,212,0.1)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.25)" }}>
-          <span>Bekijk alle events</span>
-          <span>→</span>
-        </Link>
-        <p className="text-xs mt-3" style={{ color: "rgba(232,240,240,0.35)" }}>Concerts, theater, comedy, dans en meer in België</p>
-      </section>
-
-      {/* Categories */}
-      <section className="max-w-5xl mx-auto px-6 pb-20">
-        <div className="flex flex-wrap justify-center gap-3">
-          {CATEGORIES.map((cat) => (
-            <span key={cat} className="px-4 py-2 rounded-full text-sm font-medium"
-              style={{ background: "rgba(201,211,212,0.08)", color: "rgba(232,240,240,0.75)", border: "1px solid rgba(201,211,212,0.15)" }}>
-              {cat}
-            </span>
-          ))}
+        {/* Upcoming events grid */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold" style={{ color: "#e8f0f0" }}>Binnenkort</h2>
+          <Link href="/events" className="text-sm" style={{ color: "rgba(201,211,212,0.55)" }}>Alles bekijken →</Link>
         </div>
-      </section>
 
-      {/* Features */}
-      <section className="max-w-5xl mx-auto px-6 pb-24">
-        <h2 className="text-3xl font-bold text-center mb-12" style={{ color: "#e8f0f0" }}>Waarom LUVU?</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-2xl p-6"
-              style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}>
-              <div className="text-3xl mb-4">{f.icon}</div>
-              <h3 className="font-semibold text-base mb-2" style={{ color: "#e8f0f0" }}>{f.title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: "rgba(232,240,240,0.6)" }}>{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="max-w-5xl mx-auto px-6 pb-24 text-center">
-        <h2 className="text-3xl font-bold mb-12" style={{ color: "#e8f0f0" }}>Hoe werkt het?</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-          {[
-            { step: "1", title: "Download de app", desc: "Gratis beschikbaar op iOS en Android." },
-            { step: "2", title: "Stel je voorkeuren in", desc: "Kies je categorieën, locatie en maximale afstand." },
-            { step: "3", title: "Ontdek & geniet", desc: "Swipe door gepersonaliseerde events in jouw buurt." },
-          ].map((s) => (
-            <div key={s.step} className="flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold mb-4"
-                style={{ background: "#4c6f71", color: "#c9d3d4" }}>
-                {s.step}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+          {featured?.map((e) => (
+            <Link
+              key={e.id}
+              href={`/events/${e.id}`}
+              className="rounded-2xl overflow-hidden flex flex-col group transition-transform hover:-translate-y-0.5"
+              style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}
+            >
+              <div className="relative h-44 overflow-hidden" style={{ background: "#1a2a2b" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={e.primary_image_url!} alt={e.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="absolute top-3 left-3">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(42,63,64,0.85)", color: "#c9d3d4" }}>
+                    {CAT_ICONS[e.category ?? ""] ?? ""} {e.category}
+                  </span>
+                </div>
               </div>
-              <h3 className="font-semibold mb-2" style={{ color: "#e8f0f0" }}>{s.title}</h3>
-              <p className="text-sm" style={{ color: "rgba(232,240,240,0.6)" }}>{s.desc}</p>
-            </div>
+              <div className="p-4 flex flex-col flex-1">
+                <p className="text-xs mb-1" style={{ color: "rgba(201,211,212,0.6)" }}>{formatDate(e.event_date)}</p>
+                <h3 className="font-semibold text-sm mb-0.5 leading-snug" style={{ color: "#e8f0f0" }}>{e.title}</h3>
+                {e.short_tagline && <p className="text-xs mb-2" style={{ color: "rgba(201,211,212,0.7)" }}>{e.short_tagline}</p>}
+                <div className="mt-auto flex items-center justify-between pt-3">
+                  <span className="text-xs" style={{ color: "rgba(232,240,240,0.45)" }}>
+                    {e.venue_name ?? e.city ?? ""}
+                    {e.city && e.venue_name ? ` · ${e.city}` : ""}
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "#c9d3d4" }}>{formatPrice(e.base_price)}</span>
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
-      </section>
+
+        {/* Browse CTA */}
+        <div className="text-center py-8 rounded-2xl" style={{ background: "rgba(201,211,212,0.04)", border: "1px solid rgba(201,211,212,0.1)" }}>
+          <p className="text-base font-semibold mb-1" style={{ color: "#e8f0f0" }}>Meer dan 1000 events in België</p>
+          <p className="text-sm mb-5" style={{ color: "rgba(232,240,240,0.45)" }}>Filter op datum, locatie en categorie</p>
+          <Link href="/events" className="inline-block px-8 py-3 rounded-xl font-semibold text-sm" style={{ background: "#4c6f71", color: "#c9d3d4" }}>
+            Bekijk alle events →
+          </Link>
+        </div>
+      </main>
 
       {/* Footer */}
       <footer className="border-t py-8 px-6 text-center text-sm" style={{ borderColor: "rgba(201,211,212,0.1)", color: "rgba(232,240,240,0.4)" }}>
