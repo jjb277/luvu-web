@@ -1,6 +1,12 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const PROFILE_KEY = 'luvu-profile';
+type Profile = { name?: string; postcode?: string; lat?: string; lng?: string; radius?: string; categories?: string[] };
+function loadProfile(): Profile | null {
+  try { const p = localStorage.getItem(PROFILE_KEY); return p ? JSON.parse(p) : null; } catch { return null; }
+}
 
 const DATE_OPTIONS = [
   { label: 'Vandaag', value: 'today' },
@@ -24,6 +30,12 @@ export default function EventFilters({ activeDate, activeLat, activeRadius, cat,
   const [radius, setRadius] = useState(activeRadius ?? '25');
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
+  const [profileLoc, setProfileLoc] = useState<{ postcode: string; lat: string; lng: string; radius: string } | null>(null);
+
+  useEffect(() => {
+    const p = loadProfile();
+    if (p?.lat && p?.lng && p?.postcode) setProfileLoc({ postcode: p.postcode!, lat: p.lat, lng: p.lng, radius: p.radius ?? '25' });
+  }, []);
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const p = new URLSearchParams();
@@ -93,6 +105,17 @@ export default function EventFilters({ activeDate, activeLat, activeRadius, cat,
           </button>
         ))}
       </div>
+
+      {/* Profile location shortcut */}
+      {profileLoc && !activeLat && (
+        <button
+          onClick={() => router.push(buildUrl({ lat: profileLoc.lat, lng: profileLoc.lng, radius: profileLoc.radius, page: undefined }))}
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm transition-all w-fit"
+          style={{ background: 'rgba(76,111,113,0.2)', color: '#c9d3d4', border: '1px solid rgba(76,111,113,0.4)' }}
+        >
+          📍 Gebruik mijn locatie ({profileLoc.postcode}, {profileLoc.radius} km)
+        </button>
+      )}
 
       {/* Location row */}
       <form onSubmit={handleLocation} className="flex flex-wrap gap-2 items-center">

@@ -53,8 +53,8 @@ export default async function Home() {
         </div>
         <div className="flex items-center gap-6 text-sm" style={{ color: "rgba(201,211,212,0.6)" }}>
           <Link href="/saved" className="hover:opacity-100 transition-opacity flex items-center gap-1">♥ Bewaard</Link>
+          <Link href="/profile" className="hover:opacity-100 transition-opacity">Profiel</Link>
           <Link href="/support" className="hover:opacity-100 transition-opacity">Support</Link>
-          <Link href="/privacy" className="hover:opacity-100 transition-opacity">Privacy</Link>
         </div>
       </nav>
 
