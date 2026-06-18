@@ -7,6 +7,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 export const metadata: Metadata = {
   title: "LUVU — Jouw cultuurapp",
   description: "Ontdek culturele events in jouw buurt. Concerts, theater, comedy, dans en meer — gepersonaliseerd voor jou.",
+  themeColor: "#1a2a2b",
   openGraph: {
     title: "LUVU — Jouw cultuurapp",
     description: "Ontdek culturele events in jouw buurt.",
