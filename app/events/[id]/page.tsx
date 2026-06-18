@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import type { Metadata } from "next";
+import SaveButton from "../SaveButton";
 
 const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -82,7 +83,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
               )}
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2 leading-tight" style={{ color: "#e8f0f0" }}>{e.title}</h1>
+            <div className="flex items-start justify-between gap-4 mb-2">
+              <h1 className="text-3xl sm:text-4xl font-bold leading-tight" style={{ color: "#e8f0f0" }}>{e.title}</h1>
+              <SaveButton id={e.id} />
+            </div>
 
             {e.short_tagline && (
               <p className="text-base mb-8" style={{ color: "rgba(201,211,212,0.8)" }}>{e.short_tagline}</p>
