@@ -1,7 +1,9 @@
 'use client';
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
+import ConsentModal from "./ConsentModal";
+import { hasConsent, saveConsentData } from "@/app/lib/consent";
 
 const PROFILE_KEY = "luvu-profile";
 // Hardcoded to match lib/supabase.ts — no env var dependency in browser bundle
@@ -179,6 +181,8 @@ export default function PersonalizedHome() {
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState("");
   const [editing, setEditing] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
+  const pendingAction = useRef<(() => void) | null>(null);
 
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [activeDate, setActiveDate] = useState<string | null>(null);
@@ -219,13 +223,30 @@ export default function PersonalizedHome() {
     if (p?.lat && p?.lng) fetchEvents(p, null, null);
   }, [fetchEvents]);
 
-  async function pickCity(city: { name: string; lat: number; lng: number }) {
+  function withConsent(action: () => void) {
+    if (hasConsent()) { action(); return; }
+    pendingAction.current = action;
+    setShowConsent(true);
+  }
+
+  function onConsent(email: string) {
+    saveConsentData(email);
+    setShowConsent(false);
+    pendingAction.current?.();
+    pendingAction.current = null;
+  }
+
+  function doSaveCity(city: { name: string; lat: number; lng: number }) {
     const p: Profile = { ...(profile ?? DEFAULT), postcode: city.name, lat: String(city.lat), lng: String(city.lng), radius };
     saveProfile(p);
     setProfile(p);
     setEditing(false);
     setLocError("");
     fetchEvents(p, activeCat, activeDate);
+  }
+
+  function pickCity(city: { name: string; lat: number; lng: number }) {
+    withConsent(() => doSaveCity(city));
   }
 
   async function geocodeAndSave() {
@@ -238,9 +259,12 @@ export default function PersonalizedHome() {
       );
       const data = await res.json();
       if (!data[0]) { setLocError("Locatie niet gevonden."); setLocating(false); return; }
-      const p: Profile = { ...(profile ?? DEFAULT), postcode, lat: data[0].lat, lng: data[0].lon, radius };
-      saveProfile(p); setProfile(p); setEditing(false); setLocError("");
-      fetchEvents(p, activeCat, activeDate);
+      const lat = data[0].lat, lng = data[0].lon;
+      withConsent(() => {
+        const p: Profile = { ...(profile ?? DEFAULT), postcode, lat, lng, radius };
+        saveProfile(p); setProfile(p); setEditing(false); setLocError("");
+        fetchEvents(p, activeCat, activeDate);
+      });
     } catch { setLocError("Fout bij ophalen locatie."); }
     finally { setLocating(false); }
   }
@@ -461,6 +485,7 @@ export default function PersonalizedHome() {
           </Link>
         </div>
       )}
+      <ConsentModal open={showConsent} onConsent={onConsent} onClose={() => { setShowConsent(false); pendingAction.current = null; }} />
     </div>
   );
 }

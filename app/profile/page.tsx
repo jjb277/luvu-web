@@ -16,6 +16,8 @@ const CATEGORIES = [
 
 type Profile = {
   name: string;
+  email: string;
+  marketingConsent: boolean;
   postcode: string;
   lat: string;
   lng: string;
@@ -23,7 +25,7 @@ type Profile = {
   categories: string[];
 };
 
-const DEFAULT: Profile = { name: "", postcode: "", lat: "", lng: "", radius: "25", categories: [] };
+const DEFAULT: Profile = { name: "", email: "", marketingConsent: false, postcode: "", lat: "", lng: "", radius: "25", categories: [] };
 
 function loadProfile(): Profile {
   try { return { ...DEFAULT, ...JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}") }; }
@@ -103,17 +105,47 @@ export default function ProfilePage() {
         </p>
 
         <div className="space-y-8">
-          {/* Naam */}
-          <section className="rounded-2xl p-6" style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}>
-            <h2 className="text-sm font-semibold uppercase tracking-wider mb-4" style={{ color: "rgba(201,211,212,0.5)" }}>Naam</h2>
-            <input
-              type="text"
-              value={profile.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="Jouw naam…"
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(201,211,212,0.15)", color: "#e8f0f0" }}
-            />
+          {/* Naam + e-mail */}
+          <section className="rounded-2xl p-6 space-y-4" style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}>
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "rgba(201,211,212,0.5)" }}>Naam</h2>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => set("name", e.target.value)}
+                placeholder="Jouw naam…"
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(201,211,212,0.15)", color: "#e8f0f0" }}
+              />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider mb-1" style={{ color: "rgba(201,211,212,0.5)" }}>
+                E-mailadres <span style={{ color: "#e87070" }}>*</span>
+              </h2>
+              <p className="text-xs mb-3" style={{ color: "rgba(232,240,240,0.35)" }}>
+                Vereist om events en locaties te bewaren
+              </p>
+              <input
+                type="email"
+                value={profile.email}
+                onChange={(e) => set("email", e.target.value)}
+                placeholder="jouw@email.be"
+                className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+                style={{ background: "rgba(201,211,212,0.08)", border: `1px solid ${profile.email ? "rgba(76,111,113,0.6)" : "rgba(201,211,212,0.15)"}`, color: "#e8f0f0" }}
+              />
+              <label className="flex items-start gap-3 mt-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={profile.marketingConsent}
+                  onChange={(e) => set("marketingConsent", e.target.checked)}
+                  className="mt-0.5 flex-shrink-0"
+                  style={{ accentColor: "#4c6f71" }}
+                />
+                <span className="text-xs leading-relaxed" style={{ color: "rgba(232,240,240,0.5)" }}>
+                  Ik ga akkoord dat LUVU mijn e-mailadres gebruikt voor ticketinformatie, evenementaanbevelingen en andere marketingberichten. Je kan je altijd uitschrijven.
+                </span>
+              </label>
+            </div>
           </section>
 
           {/* Locatie */}
@@ -193,8 +225,9 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3">
             <button
               onClick={save}
+              disabled={!profile.email || !profile.marketingConsent}
               className="px-6 py-3 rounded-xl text-sm font-semibold transition-all"
-              style={{ background: saved ? "rgba(76,200,160,0.3)" : "#4c6f71", color: "#c9d3d4" }}
+              style={{ background: saved ? "rgba(76,200,160,0.3)" : "#4c6f71", color: "#c9d3d4", opacity: !profile.email || !profile.marketingConsent ? 0.45 : 1, cursor: !profile.email || !profile.marketingConsent ? "not-allowed" : "pointer" }}
             >
               {saved ? "✓ Opgeslagen" : "Opslaan"}
             </button>
