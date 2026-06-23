@@ -265,17 +265,30 @@ export default function PersonalizedHome() {
       {/* ── Location ────────────────────────────────────── */}
       {hasLocation && !editing ? (
         /* Region bar */
-        <div className="flex items-center justify-between mb-5 px-4 py-3 rounded-2xl"
+        <div className="flex items-center justify-between mb-5 px-4 py-3 rounded-2xl flex-wrap gap-2"
           style={{ background: "rgba(76,111,113,0.15)", border: "1px solid rgba(76,111,113,0.3)" }}>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span style={{ color: "#4c6f71" }}>📍</span>
             <span className="text-sm font-medium" style={{ color: "#c9d3d4" }}>{profile!.postcode}</span>
-            <span className="text-xs" style={{ color: "rgba(201,211,212,0.5)" }}>· {profile!.radius} km</span>
+            <span className="text-xs" style={{ color: "rgba(201,211,212,0.5)" }}>·</span>
+            <select
+              value={profile!.radius}
+              onChange={(e) => {
+                const updated = { ...profile!, radius: e.target.value };
+                saveProfile(updated);
+                setProfile(updated);
+                setRadius(e.target.value);
+                fetchEvents(updated, activeCat, activeDate);
+              }}
+              className="px-2 py-0.5 rounded-lg text-xs outline-none"
+              style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(76,111,113,0.4)", color: "#c9d3d4" }}>
+              {[10, 20, 30, 50, 75, 100].map((r) => <option key={r} value={r}>{r} km</option>)}
+            </select>
           </div>
           <button onClick={() => { setEditing(true); setPostcode(profile!.postcode); setRadius(profile!.radius); }}
             className="text-xs px-3 py-1.5 rounded-lg"
             style={{ background: "rgba(201,211,212,0.08)", color: "rgba(201,211,212,0.7)", border: "1px solid rgba(201,211,212,0.15)" }}>
-            Wijzigen
+            Andere stad
           </button>
         </div>
       ) : (

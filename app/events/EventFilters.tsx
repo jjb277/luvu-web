@@ -166,9 +166,14 @@ export default function EventFilters({ activeDate, activeLat, activeLng, activeR
       {/* Active location bar */}
       {hasLocation && (
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm" style={{ color: 'rgba(232,240,240,0.55)' }}>
-            📍 Straal {activeRadius ?? '25'} km actief
-          </span>
+          <span className="text-sm" style={{ color: 'rgba(232,240,240,0.55)' }}>📍 Straal</span>
+          <select
+            value={activeRadius ?? '25'}
+            onChange={(e) => router.push(buildUrl({ radius: e.target.value, page: undefined }))}
+            className="px-3 py-1 rounded-lg text-sm outline-none"
+            style={{ background: 'rgba(201,211,212,0.08)', border: '1px solid rgba(76,111,113,0.5)', color: '#c9d3d4' }}>
+            {[5, 10, 20, 30, 50, 75, 100].map((r) => <option key={r} value={r}>{r} km</option>)}
+          </select>
           <button onClick={() => setShowCities(!showCities)}
             className="px-3 py-1 rounded-lg text-xs"
             style={{ background: 'rgba(201,211,212,0.08)', color: '#c9d3d4', border: '1px solid rgba(201,211,212,0.15)' }}>
