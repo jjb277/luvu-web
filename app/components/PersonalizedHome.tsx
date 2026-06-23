@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const PROFILE_KEY = "luvu-profile";
-const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Hardcoded to match lib/supabase.ts — no env var dependency in browser bundle
+const SB_URL = "https://ltuhcgonetthvgzyhzea.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0dWhjZ29uZXR0aHZnenloemVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NDU4NTgsImV4cCI6MjA4NzUyMTg1OH0.ak-DlSr_hFI_8GbZxfcvbOWbpA0qfEbUfX54f3aNbBc";
 
 const POPULAR_CITIES = [
   { name: "Antwerpen", lat: 51.2213, lng: 4.4051 },
@@ -28,12 +29,12 @@ const DATE_OPTIONS = [
 ];
 
 const CATEGORIES = [
-  { label: "Muziek",   value: "Music",   icon: "🎵" },
-  { label: "Theater",  value: "Theater", icon: "🎭" },
-  { label: "Comedy",   value: "Comedy",  icon: "😄" },
-  { label: "Dans",     value: "Dance",   icon: "💃" },
-  { label: "Familie",  value: "Family",  icon: "👨‍👩‍👧" },
-  { label: "Film",     value: "Film",    icon: "🎬" },
+  { label: "Muziek",  value: "Music",   icon: "🎵" },
+  { label: "Theater", value: "Theater", icon: "🎭" },
+  { label: "Comedy",  value: "Comedy",  icon: "😄" },
+  { label: "Dans",    value: "Dance",   icon: "💃" },
+  { label: "Familie", value: "Family",  icon: "👨‍👩‍👧" },
+  { label: "Film",    value: "Film",    icon: "🎬" },
 ];
 
 const CAT_ICONS: Record<string, string> = {
@@ -42,24 +43,16 @@ const CAT_ICONS: Record<string, string> = {
 };
 
 type Profile = {
-  name: string;
-  postcode: string;
-  lat: string;
-  lng: string;
-  radius: string;
+  name: string; postcode: string;
+  lat: string; lng: string; radius: string;
   categories: string[];
 };
 
 type Event = {
-  id: string;
-  title: string;
-  short_tagline: string | null;
-  category: string | null;
-  event_date: string;
-  venue_name: string | null;
-  city: string | null;
-  base_price: number | null;
-  primary_image_url: string | null;
+  id: string; title: string; short_tagline: string | null;
+  category: string | null; event_date: string;
+  venue_name: string | null; city: string | null;
+  base_price: number | null; primary_image_url: string | null;
 };
 
 const DEFAULT: Profile = { name: "", postcode: "", lat: "", lng: "", radius: "25", categories: [] };
@@ -67,8 +60,7 @@ const DEFAULT: Profile = { name: "", postcode: "", lat: "", lng: "", radius: "25
 function loadProfile(): Profile | null {
   try {
     const raw = localStorage.getItem(PROFILE_KEY);
-    if (!raw) return null;
-    return { ...DEFAULT, ...JSON.parse(raw) };
+    return raw ? { ...DEFAULT, ...JSON.parse(raw) } : null;
   } catch { return null; }
 }
 
@@ -76,53 +68,49 @@ function saveProfile(p: Profile) {
   localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
 }
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric", month: "short" });
+function formatDate(s: string) {
+  return new Date(s).toLocaleDateString("nl-BE", { weekday: "short", day: "numeric", month: "short" });
 }
 
-function formatPrice(price: number | null) {
-  if (!price) return "Gratis";
-  return `€ ${price.toFixed(2).replace(".", ",")}`;
+function formatPrice(p: number | null) {
+  return p ? `€ ${p.toFixed(2).replace(".", ",")}` : "Gratis";
 }
 
-function getBoundingBox(lat: number, lng: number, radiusKm: number) {
-  const latDelta = (radiusKm / 6371) * (180 / Math.PI);
-  const lngDelta = latDelta / Math.cos((lat * Math.PI) / 180);
-  return { minLat: lat - latDelta, maxLat: lat + latDelta, minLng: lng - lngDelta, maxLng: lng + lngDelta };
+function getBoundingBox(lat: number, lng: number, km: number) {
+  const latD = (km / 6371) * (180 / Math.PI);
+  const lngD = latD / Math.cos((lat * Math.PI) / 180);
+  return { minLat: lat - latD, maxLat: lat + latD, minLng: lng - lngD, maxLng: lng + lngD };
 }
 
-function getDateRange(value: string): { from: string; to: string } | null {
+function getDateRange(v: string) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  switch (value) {
-    case "today":
-      return { from: today.toISOString(), to: new Date(today.getTime() + 86400000).toISOString() };
-    case "weekend": {
-      const day = today.getDay();
-      const daysToFri = day <= 5 ? (5 - day || (day === 0 ? 6 : 0)) : 6;
-      const fri = new Date(today.getTime() + (day === 5 || day === 6 || day === 0 ? 0 : daysToFri) * 86400000);
-      const mon = new Date(fri);
-      while (mon.getDay() !== 1) mon.setDate(mon.getDate() + 1);
-      return { from: (day === 5 || day === 6 || day === 0 ? today : fri).toISOString(), to: mon.toISOString() };
-    }
-    case "week":
-      return { from: today.toISOString(), to: new Date(today.getTime() + 7 * 86400000).toISOString() };
-    case "month": {
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      return { from: today.toISOString(), to: end.toISOString() };
-    }
-    default: return null;
+  if (v === "today") return { from: today.toISOString(), to: new Date(today.getTime() + 86400000).toISOString() };
+  if (v === "week")  return { from: today.toISOString(), to: new Date(today.getTime() + 7 * 86400000).toISOString() };
+  if (v === "month") return { from: today.toISOString(), to: new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString() };
+  if (v === "weekend") {
+    const day = today.getDay();
+    const toFri = (5 - day + 7) % 7;
+    const fri = day === 0 || day === 6 || day === 5 ? today : new Date(today.getTime() + toFri * 86400000);
+    const mon = new Date(fri); while (mon.getDay() !== 1) mon.setDate(mon.getDate() + 1);
+    return { from: fri.toISOString(), to: mon.toISOString() };
   }
+  return null;
+}
+
+function buildEventsUrl(profile: Profile | null, activeCat: string | null, activeDate: string | null) {
+  const parts: string[] = [];
+  if (activeCat) parts.push(`cat=${activeCat}`);
+  if (activeDate) parts.push(`date=${activeDate}`);
+  if (profile?.lat) parts.push(`lat=${profile.lat}&lng=${profile.lng}&radius=${profile.radius}`);
+  return `/events${parts.length ? "?" + parts.join("&") : ""}`;
 }
 
 function EventCard({ e }: { e: Event }) {
   return (
-    <Link
-      href={`/events/${e.id}`}
+    <Link href={`/events/${e.id}`}
       className="rounded-2xl overflow-hidden flex flex-col group transition-transform hover:-translate-y-0.5"
-      style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}
-    >
+      style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}>
       <div className="relative h-44 overflow-hidden" style={{ background: "#1a2a2b" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={e.primary_image_url!} alt={e.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -138,8 +126,7 @@ function EventCard({ e }: { e: Event }) {
         {e.short_tagline && <p className="text-xs mb-2" style={{ color: "rgba(201,211,212,0.7)" }}>{e.short_tagline}</p>}
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="text-xs" style={{ color: "rgba(232,240,240,0.45)" }}>
-            {e.venue_name ?? e.city ?? ""}
-            {e.city && e.venue_name ? ` · ${e.city}` : ""}
+            {e.venue_name ?? e.city ?? ""}{e.city && e.venue_name ? ` · ${e.city}` : ""}
           </span>
           <span className="text-sm font-semibold" style={{ color: "#c9d3d4" }}>{formatPrice(e.base_price)}</span>
         </div>
@@ -165,29 +152,26 @@ export default function PersonalizedHome() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Location setup
   const [postcode, setPostcode] = useState("");
   const [radius, setRadius] = useState("25");
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState("");
   const [editing, setEditing] = useState(false);
 
-  // Filters
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [activeDate, setActiveDate] = useState<string | null>(null);
 
-  // Events
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
 
-  const fetchEvents = useCallback(async (p: Profile, cat: string | null, dateVal: string | null) => {
+  const fetchEvents = useCallback(async (p: Profile, cat: string | null, date: string | null) => {
     if (!p.lat || !p.lng) return;
     setEventsLoading(true);
     const sb = createClient(SB_URL, SB_KEY);
     const box = getBoundingBox(parseFloat(p.lat), parseFloat(p.lng), parseInt(p.radius ?? "25"));
-    const dr = dateVal ? getDateRange(dateVal) : null;
+    const dr = date ? getDateRange(date) : null;
 
-    let query = sb
+    let q = sb
       .from("events")
       .select("id, title, short_tagline, category, event_date, venue_name, city, base_price, primary_image_url")
       .in("visibility_status", ["live", "public"])
@@ -197,14 +181,11 @@ export default function PersonalizedHome() {
       .order("event_date", { ascending: true })
       .limit(12);
 
-    if (dr) {
-      query = query.gte("event_date", dr.from).lt("event_date", dr.to);
-    } else {
-      query = query.gt("event_date", new Date().toISOString());
-    }
-    if (cat) query = query.eq("category", cat);
+    q = dr ? q.gte("event_date", dr.from).lt("event_date", dr.to)
+            : q.gt("event_date", new Date().toISOString());
+    if (cat) q = q.eq("category", cat);
 
-    const { data } = await query;
+    const { data } = await q;
     setEvents(data ?? []);
     setEventsLoading(false);
   }, []);
@@ -217,24 +198,17 @@ export default function PersonalizedHome() {
   }, [fetchEvents]);
 
   async function pickCity(city: { name: string; lat: number; lng: number }) {
-    const newProfile: Profile = {
-      ...(profile ?? DEFAULT),
-      postcode: city.name,
-      lat: String(city.lat),
-      lng: String(city.lng),
-      radius: radius,
-    };
-    saveProfile(newProfile);
-    setProfile(newProfile);
+    const p: Profile = { ...(profile ?? DEFAULT), postcode: city.name, lat: String(city.lat), lng: String(city.lng), radius };
+    saveProfile(p);
+    setProfile(p);
     setEditing(false);
     setLocError("");
-    fetchEvents(newProfile, activeCat, activeDate);
+    fetchEvents(p, activeCat, activeDate);
   }
 
   async function geocodeAndSave() {
     if (!postcode.trim()) return;
-    setLocating(true);
-    setLocError("");
+    setLocating(true); setLocError("");
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(postcode + " Belgium")}&limit=1`,
@@ -242,23 +216,11 @@ export default function PersonalizedHome() {
       );
       const data = await res.json();
       if (!data[0]) { setLocError("Locatie niet gevonden."); setLocating(false); return; }
-      const newProfile: Profile = {
-        ...(profile ?? DEFAULT),
-        postcode,
-        lat: data[0].lat,
-        lng: data[0].lon,
-        radius,
-      };
-      saveProfile(newProfile);
-      setProfile(newProfile);
-      setEditing(false);
-      setLocError("");
-      fetchEvents(newProfile, activeCat, activeDate);
-    } catch {
-      setLocError("Fout bij ophalen locatie.");
-    } finally {
-      setLocating(false);
-    }
+      const p: Profile = { ...(profile ?? DEFAULT), postcode, lat: data[0].lat, lng: data[0].lon, radius };
+      saveProfile(p); setProfile(p); setEditing(false); setLocError("");
+      fetchEvents(p, activeCat, activeDate);
+    } catch { setLocError("Fout bij ophalen locatie."); }
+    finally { setLocating(false); }
   }
 
   function handleCat(cat: string) {
@@ -273,33 +235,14 @@ export default function PersonalizedHome() {
     if (profile?.lat) fetchEvents(profile, activeCat, next);
   }
 
-  const hasLocation = !!profile?.lat;
-
-  if (!mounted) {
-    return (
-      <div>
-        <div className="mb-8 rounded-2xl p-6" style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}>
-          <div className="h-6 w-40 rounded mb-3" style={{ background: "rgba(201,211,212,0.08)" }} />
-          <div className="flex gap-2 flex-wrap mb-3">
-            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-9 w-24 rounded-full" style={{ background: "rgba(201,211,212,0.07)" }} />)}
-          </div>
-          <div className="flex gap-2">
-            <div className="h-10 w-48 rounded-xl" style={{ background: "rgba(201,211,212,0.08)" }} />
-            <div className="h-10 w-20 rounded-xl" style={{ background: "rgba(201,211,212,0.08)" }} />
-            <div className="h-10 w-32 rounded-xl" style={{ background: "rgba(76,111,113,0.3)" }} />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-      </div>
-    );
-  }
+  // hasLocation only meaningful after mount (localStorage read)
+  const hasLocation = mounted && !!profile?.lat;
 
   return (
     <div>
-      {/* ── Location panel ─────────────────────────────── */}
+      {/* ── Location ────────────────────────────────────── */}
       {hasLocation && !editing ? (
+        /* Region bar */
         <div className="flex items-center justify-between mb-5 px-4 py-3 rounded-2xl"
           style={{ background: "rgba(76,111,113,0.15)", border: "1px solid rgba(76,111,113,0.3)" }}>
           <div className="flex items-center gap-2">
@@ -307,46 +250,42 @@ export default function PersonalizedHome() {
             <span className="text-sm font-medium" style={{ color: "#c9d3d4" }}>{profile!.postcode}</span>
             <span className="text-xs" style={{ color: "rgba(201,211,212,0.5)" }}>· {profile!.radius} km</span>
           </div>
-          <button
-            onClick={() => { setEditing(true); setPostcode(profile!.postcode); setRadius(profile!.radius); }}
+          <button onClick={() => { setEditing(true); setPostcode(profile!.postcode); setRadius(profile!.radius); }}
             className="text-xs px-3 py-1.5 rounded-lg"
-            style={{ background: "rgba(201,211,212,0.08)", color: "rgba(201,211,212,0.7)", border: "1px solid rgba(201,211,212,0.15)" }}
-          >
+            style={{ background: "rgba(201,211,212,0.08)", color: "rgba(201,211,212,0.7)", border: "1px solid rgba(201,211,212,0.15)" }}>
             Wijzigen
           </button>
         </div>
       ) : (
-        <div className="mb-8 rounded-2xl p-6"
+        /* City picker — always rendered (static, no localStorage) */
+        <div className="mb-7 rounded-2xl p-6"
           style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}>
           <h2 className="text-base font-semibold mb-1" style={{ color: "#e8f0f0" }}>
             {editing ? "Regio aanpassen" : "📍 Kies jouw stad"}
           </h2>
           <p className="text-xs mb-4" style={{ color: "rgba(232,240,240,0.4)" }}>
-            {editing ? "Kies een stad of voer een postcode in." : "Selecteer een stad of typ je postcode."}
+            Selecteer een stad om events in jouw buurt te zien.
           </p>
 
           {/* Popular cities */}
           <div className="flex flex-wrap gap-2 mb-4">
             {POPULAR_CITIES.map((c) => (
               <button key={c.name} onClick={() => pickCity(c)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:opacity-90"
+                className="px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:opacity-80"
                 style={{ background: "rgba(201,211,212,0.09)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.18)" }}>
                 {c.name}
               </button>
             ))}
           </div>
 
-          {/* Postcode input */}
+          {/* Postcode fallback */}
           <div className="flex flex-wrap gap-2 items-center">
-            <input
-              type="text"
-              value={postcode}
+            <input type="text" value={postcode}
               onChange={(e) => setPostcode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && geocodeAndSave()}
               placeholder="Andere stad of postcode…"
               className="px-4 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(201,211,212,0.2)", color: "#e8f0f0", width: "220px" }}
-            />
+              style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(201,211,212,0.2)", color: "#e8f0f0", width: "220px" }} />
             <select value={radius} onChange={(e) => setRadius(e.target.value)}
               className="px-3 py-2.5 rounded-xl text-sm outline-none"
               style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(201,211,212,0.15)", color: "#e8f0f0" }}>
@@ -365,7 +304,7 @@ export default function PersonalizedHome() {
             )}
           </div>
           {locError && <p className="text-xs mt-2" style={{ color: "#e87070" }}>{locError}</p>}
-          {!hasLocation && (
+          {!hasLocation && !editing && (
             <p className="text-xs mt-3" style={{ color: "rgba(232,240,240,0.3)" }}>
               Of <Link href="/events" className="underline">bekijk alle events in België</Link>
             </p>
@@ -373,7 +312,7 @@ export default function PersonalizedHome() {
         </div>
       )}
 
-      {/* ── Date filter ─────────────────────────────────── */}
+      {/* ── Date filter (after location is set) ─────────── */}
       {hasLocation && (
         <div className="flex flex-wrap gap-2 mb-4">
           {DATE_OPTIONS.map((opt) => (
@@ -388,7 +327,7 @@ export default function PersonalizedHome() {
         </div>
       )}
 
-      {/* ── Category filter ──────────────────────────────── */}
+      {/* ── Category filter (always visible) ────────────── */}
       <div className="flex flex-wrap gap-2 mb-6">
         {CATEGORIES.map((c) => (
           <button key={c.value} onClick={() => handleCat(c.value)}
@@ -399,12 +338,7 @@ export default function PersonalizedHome() {
             {c.icon} {c.label}
           </button>
         ))}
-        <Link
-          href={`/events${[
-            activeCat ? `cat=${activeCat}` : "",
-            activeDate ? `date=${activeDate}` : "",
-            hasLocation ? `lat=${profile!.lat}&lng=${profile!.lng}&radius=${profile!.radius}` : "",
-          ].filter(Boolean).map((s, i) => (i === 0 ? `?${s}` : s)).join("&")}`}
+        <Link href={buildEventsUrl(profile, activeCat, activeDate)}
           className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:opacity-90"
           style={{ background: "rgba(76,111,113,0.35)", color: "#c9d3d4", border: "1px solid rgba(76,111,113,0.5)" }}>
           Alle events →
@@ -412,27 +346,25 @@ export default function PersonalizedHome() {
       </div>
 
       {/* ── Events grid ──────────────────────────────────── */}
-      {hasLocation ? (
+      {!mounted ? (
+        /* Skeleton while JS loads */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : hasLocation ? (
         <>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold" style={{ color: "#e8f0f0" }}>
-              {eventsLoading ? "Laden…" : events.length
-                ? `${events.length} events${activeDate ? ` · ${DATE_OPTIONS.find(d => d.value === activeDate)?.label.toLowerCase()}` : " in jouw buurt"}`
+              {eventsLoading ? "Laden…"
+                : events.length ? `${events.length} events${activeDate ? ` · ${DATE_OPTIONS.find(d => d.value === activeDate)?.label.toLowerCase()}` : " in jouw buurt"}`
                 : "Geen events gevonden"}
             </h2>
             {!eventsLoading && events.length > 0 && (
-              <Link
-                href={`/events?${[
-                  hasLocation ? `lat=${profile!.lat}&lng=${profile!.lng}&radius=${profile!.radius}` : "",
-                  activeCat ? `cat=${activeCat}` : "",
-                  activeDate ? `date=${activeDate}` : "",
-                ].filter(Boolean).join("&")}`}
-                className="text-sm" style={{ color: "rgba(201,211,212,0.55)" }}>
+              <Link href={buildEventsUrl(profile, activeCat, activeDate)} className="text-sm" style={{ color: "rgba(201,211,212,0.55)" }}>
                 Alles bekijken →
               </Link>
             )}
           </div>
-
           {eventsLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -452,15 +384,13 @@ export default function PersonalizedHome() {
               </p>
               <div className="flex items-center justify-center gap-3 flex-wrap">
                 {activeDate && (
-                  <button onClick={() => handleDate(activeDate)}
-                    className="px-4 py-2 rounded-xl text-sm font-medium"
+                  <button onClick={() => handleDate(activeDate)} className="px-4 py-2 rounded-xl text-sm"
                     style={{ background: "rgba(201,211,212,0.08)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.15)" }}>
-                    Wis datumfilter
+                    Wis datum
                   </button>
                 )}
                 <button onClick={() => { setEditing(true); setPostcode(profile!.postcode); setRadius(profile!.radius); }}
-                  className="px-4 py-2 rounded-xl text-sm font-medium"
-                  style={{ background: "#4c6f71", color: "#c9d3d4" }}>
+                  className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: "#4c6f71", color: "#c9d3d4" }}>
                   Radius aanpassen
                 </button>
               </div>
@@ -471,9 +401,8 @@ export default function PersonalizedHome() {
         <div className="text-center py-12 rounded-2xl"
           style={{ background: "rgba(201,211,212,0.04)", border: "1px solid rgba(201,211,212,0.1)" }}>
           <p className="text-base font-semibold mb-1" style={{ color: "#e8f0f0" }}>Meer dan 1000 events in België</p>
-          <p className="text-sm mb-5" style={{ color: "rgba(232,240,240,0.45)" }}>Kies je stad hierboven om events dicht bij jou te ontdekken</p>
-          <Link href="/events" className="inline-block px-8 py-3 rounded-xl font-semibold text-sm"
-            style={{ background: "#4c6f71", color: "#c9d3d4" }}>
+          <p className="text-sm mb-5" style={{ color: "rgba(232,240,240,0.45)" }}>Kies een stad hierboven om events dicht bij jou te ontdekken</p>
+          <Link href="/events" className="inline-block px-8 py-3 rounded-xl font-semibold text-sm" style={{ background: "#4c6f71", color: "#c9d3d4" }}>
             Bekijk alle events →
           </Link>
         </div>
