@@ -9,11 +9,22 @@ function loadProfile(): Profile | null {
 }
 
 const DATE_OPTIONS = [
-  { label: 'Vandaag',     value: 'today' },
-  { label: 'Dit weekend', value: 'weekend' },
-  { label: 'Deze week',   value: 'week' },
-  { label: 'Deze maand',  value: 'month' },
+  { label: 'Vandaag',        value: 'today' },
+  { label: 'Dit weekend',    value: 'weekend' },
+  { label: 'Deze week',      value: 'week' },
+  { label: 'Deze maand',     value: 'month' },
+  { label: 'Volgende maand', value: 'next-month' },
 ];
+
+function getUpcomingMonths(n = 12) {
+  const now = new Date();
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const value = `month-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = d.toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' });
+    return { value, label: label.charAt(0).toUpperCase() + label.slice(1) };
+  });
+}
 
 const POPULAR_CITIES = [
   { name: 'Antwerpen', lat: '51.2213', lng: '4.4051' },
@@ -111,7 +122,7 @@ export default function EventFilters({ activeDate, activeLat, activeLng, activeR
   return (
     <div className="space-y-3 mb-8">
       {/* Date buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         {DATE_OPTIONS.map((opt) => (
           <button key={opt.value} onClick={() => toggleDate(opt.value)}
             className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
@@ -121,6 +132,25 @@ export default function EventFilters({ activeDate, activeLat, activeLng, activeR
             {opt.label}
           </button>
         ))}
+        {/* Month picker */}
+        <select
+          value={activeDate?.startsWith('month-') ? activeDate : ''}
+          onChange={(e) => e.target.value && router.push(buildUrl({ date: e.target.value, page: undefined }))}
+          className="px-3 py-1.5 rounded-full text-sm font-medium outline-none"
+          style={activeDate?.startsWith('month-')
+            ? { background: '#4c6f71', color: '#c9d3d4' }
+            : { background: 'rgba(201,211,212,0.07)', color: 'rgba(232,240,240,0.6)', border: '1px solid rgba(201,211,212,0.12)' }}>
+          <option value=''>Kies maand</option>
+          {getUpcomingMonths().map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+        </select>
+        {/* All */}
+        <button onClick={() => router.push(buildUrl({ date: undefined, page: undefined }))}
+          className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+          style={!activeDate
+            ? { background: '#4c6f71', color: '#c9d3d4' }
+            : { background: 'rgba(201,211,212,0.07)', color: 'rgba(232,240,240,0.6)', border: '1px solid rgba(201,211,212,0.12)' }}>
+          Alles
+        </button>
       </div>
 
       {/* Profile location shortcut */}

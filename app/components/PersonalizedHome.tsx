@@ -22,11 +22,22 @@ const POPULAR_CITIES = [
 ];
 
 const DATE_OPTIONS = [
-  { label: "Vandaag",     value: "today" },
-  { label: "Dit weekend", value: "weekend" },
-  { label: "Deze week",   value: "week" },
-  { label: "Deze maand",  value: "month" },
+  { label: "Vandaag",        value: "today" },
+  { label: "Dit weekend",    value: "weekend" },
+  { label: "Deze week",      value: "week" },
+  { label: "Deze maand",     value: "month" },
+  { label: "Volgende maand", value: "next-month" },
 ];
+
+function getUpcomingMonths(n = 12) {
+  const now = new Date();
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const value = `month-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("nl-BE", { month: "long", year: "numeric" });
+    return { value, label: label.charAt(0).toUpperCase() + label.slice(1) };
+  });
+}
 
 const CATEGORIES = [
   { label: "Muziek",  value: "Music",   icon: "🎵" },
@@ -85,9 +96,20 @@ function getBoundingBox(lat: number, lng: number, km: number) {
 function getDateRange(v: string) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (v === "all") return null;
   if (v === "today") return { from: today.toISOString(), to: new Date(today.getTime() + 86400000).toISOString() };
   if (v === "week")  return { from: today.toISOString(), to: new Date(today.getTime() + 7 * 86400000).toISOString() };
   if (v === "month") return { from: today.toISOString(), to: new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString() };
+  if (v === "next-month") {
+    const y = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+    const m = (now.getMonth() + 1) % 12;
+    return { from: new Date(y, m, 1).toISOString(), to: new Date(y, m + 1, 1).toISOString() };
+  }
+  if (v.startsWith("month-")) {
+    const [, , yr, mo] = v.split("-");
+    const y = parseInt(yr), m = parseInt(mo) - 1;
+    return { from: new Date(y, m, 1).toISOString(), to: new Date(y, m + 1, 1).toISOString() };
+  }
   if (v === "weekend") {
     const day = today.getDay();
     const toFri = (5 - day + 7) % 7;
@@ -314,7 +336,7 @@ export default function PersonalizedHome() {
 
       {/* ── Date filter (after location is set) ─────────── */}
       {hasLocation && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4 items-center">
           {DATE_OPTIONS.map((opt) => (
             <button key={opt.value} onClick={() => handleDate(opt.value)}
               className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
@@ -324,6 +346,25 @@ export default function PersonalizedHome() {
               {opt.label}
             </button>
           ))}
+          {/* Month picker */}
+          <select
+            value={activeDate?.startsWith("month-") ? activeDate : ""}
+            onChange={(e) => e.target.value && handleDate(e.target.value)}
+            className="px-3 py-1.5 rounded-full text-sm font-medium outline-none"
+            style={activeDate?.startsWith("month-")
+              ? { background: "#4c6f71", color: "#c9d3d4" }
+              : { background: "rgba(201,211,212,0.07)", color: "rgba(232,240,240,0.6)", border: "1px solid rgba(201,211,212,0.12)" }}>
+            <option value="">Kies maand</option>
+            {getUpcomingMonths().map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          {/* All */}
+          <button onClick={() => { setActiveDate(null); if (profile?.lat) fetchEvents(profile, activeCat, null); }}
+            className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+            style={!activeDate
+              ? { background: "#4c6f71", color: "#c9d3d4" }
+              : { background: "rgba(201,211,212,0.07)", color: "rgba(232,240,240,0.6)", border: "1px solid rgba(201,211,212,0.12)" }}>
+            Alles
+          </button>
         </div>
       )}
 

@@ -36,7 +36,7 @@ function buildUrl(params: Record<string, string | undefined>) {
 }
 
 function getDateRange(date?: string): { from: string; to: string } | null {
-  if (!date) return null;
+  if (!date || date === "all") return null;
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   switch (date) {
@@ -44,24 +44,27 @@ function getDateRange(date?: string): { from: string; to: string } | null {
       return { from: today.toISOString(), to: new Date(today.getTime() + 86400000).toISOString() };
     case "weekend": {
       const day = today.getDay();
-      let start: Date;
-      if (day === 5 || day === 6 || day === 0) {
-        start = today;
-      } else {
-        const daysToFri = (5 - day + 7) % 7;
-        start = new Date(today.getTime() + daysToFri * 86400000);
-      }
+      const start = (day === 5 || day === 6 || day === 0) ? today
+        : new Date(today.getTime() + ((5 - day + 7) % 7) * 86400000);
       const end = new Date(start);
       while (end.getDay() !== 1) end.setDate(end.getDate() + 1);
       return { from: start.toISOString(), to: end.toISOString() };
     }
     case "week":
       return { from: today.toISOString(), to: new Date(today.getTime() + 7 * 86400000).toISOString() };
-    case "month": {
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      return { from: today.toISOString(), to: monthEnd.toISOString() };
+    case "month":
+      return { from: today.toISOString(), to: new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString() };
+    case "next-month": {
+      const y = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+      const m = (now.getMonth() + 1) % 12;
+      return { from: new Date(y, m, 1).toISOString(), to: new Date(y, m + 1, 1).toISOString() };
     }
     default:
+      if (date.startsWith("month-")) {
+        const parts = date.split("-");
+        const y = parseInt(parts[1]), m = parseInt(parts[2]) - 1;
+        return { from: new Date(y, m, 1).toISOString(), to: new Date(y, m + 1, 1).toISOString() };
+      }
       return null;
   }
 }
