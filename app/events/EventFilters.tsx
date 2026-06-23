@@ -9,10 +9,23 @@ function loadProfile(): Profile | null {
 }
 
 const DATE_OPTIONS = [
-  { label: 'Vandaag', value: 'today' },
+  { label: 'Vandaag',     value: 'today' },
   { label: 'Dit weekend', value: 'weekend' },
-  { label: 'Deze week', value: 'week' },
-  { label: 'Deze maand', value: 'month' },
+  { label: 'Deze week',   value: 'week' },
+  { label: 'Deze maand',  value: 'month' },
+];
+
+const POPULAR_CITIES = [
+  { name: 'Antwerpen', lat: '51.2213', lng: '4.4051' },
+  { name: 'Gent',      lat: '51.0543', lng: '3.7174' },
+  { name: 'Brugge',    lat: '51.2093', lng: '3.2247' },
+  { name: 'Brussel',   lat: '50.8503', lng: '4.3517' },
+  { name: 'Leuven',    lat: '50.8798', lng: '4.7005' },
+  { name: 'Mechelen',  lat: '51.0259', lng: '4.4776' },
+  { name: 'Hasselt',   lat: '50.9307', lng: '5.3383' },
+  { name: 'Kortrijk',  lat: '50.8282', lng: '3.2645' },
+  { name: 'Genk',      lat: '50.9656', lng: '5.5024' },
+  { name: 'Liège',     lat: '50.6450', lng: '5.5729' },
 ];
 
 type Props = {
@@ -24,17 +37,20 @@ type Props = {
   q?: string;
 };
 
-export default function EventFilters({ activeDate, activeLat, activeRadius, cat, q }: Props) {
+export default function EventFilters({ activeDate, activeLat, activeLng, activeRadius, cat, q }: Props) {
   const router = useRouter();
   const [postcode, setPostcode] = useState('');
   const [radius, setRadius] = useState(activeRadius ?? '25');
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState('');
   const [profileLoc, setProfileLoc] = useState<{ postcode: string; lat: string; lng: string; radius: string } | null>(null);
+  const [showCities, setShowCities] = useState(false);
 
   useEffect(() => {
     const p = loadProfile();
-    if (p?.lat && p?.lng && p?.postcode) setProfileLoc({ postcode: p.postcode!, lat: p.lat, lng: p.lng, radius: p.radius ?? '25' });
+    if (p?.lat && p?.lng && p?.postcode) {
+      setProfileLoc({ postcode: p.postcode!, lat: p.lat, lng: p.lng, radius: p.radius ?? '25' });
+    }
   }, []);
 
   function buildUrl(overrides: Record<string, string | undefined>) {
@@ -44,6 +60,7 @@ export default function EventFilters({ activeDate, activeLat, activeRadius, cat,
       q: q || undefined,
       date: activeDate,
       lat: activeLat,
+      lng: activeLng,   // ← was missing before
       radius: activeRadius,
     };
     const merged = { ...base, ...overrides };
@@ -54,6 +71,11 @@ export default function EventFilters({ activeDate, activeLat, activeRadius, cat,
 
   function toggleDate(val: string) {
     router.push(buildUrl({ date: activeDate === val ? undefined : val, page: undefined }));
+  }
+
+  function pickCity(city: { name: string; lat: string; lng: string }) {
+    setShowCities(false);
+    router.push(buildUrl({ lat: city.lat, lng: city.lng, radius, page: undefined }));
   }
 
   async function handleLocation(e: React.FormEvent) {
@@ -70,7 +92,7 @@ export default function EventFilters({ activeDate, activeLat, activeRadius, cat,
         { headers: { 'User-Agent': 'LUVU Events App' } }
       );
       const data = await res.json();
-      if (!data[0]) { setLocError('Locatie niet gevonden'); return; }
+      if (!data[0]) { setLocError('Locatie niet gevonden'); setLocating(false); return; }
       router.push(buildUrl({ lat: data[0].lat, lng: data[0].lon, radius, page: undefined }));
     } catch {
       setLocError('Fout bij ophalen locatie');
@@ -91,81 +113,85 @@ export default function EventFilters({ activeDate, activeLat, activeRadius, cat,
       {/* Date buttons */}
       <div className="flex flex-wrap gap-2">
         {DATE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => toggleDate(opt.value)}
+          <button key={opt.value} onClick={() => toggleDate(opt.value)}
             className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
-            style={
-              activeDate === opt.value
-                ? { background: '#4c6f71', color: '#c9d3d4' }
-                : { background: 'rgba(201,211,212,0.07)', color: 'rgba(232,240,240,0.6)', border: '1px solid rgba(201,211,212,0.12)' }
-            }
-          >
+            style={activeDate === opt.value
+              ? { background: '#4c6f71', color: '#c9d3d4' }
+              : { background: 'rgba(201,211,212,0.07)', color: 'rgba(232,240,240,0.6)', border: '1px solid rgba(201,211,212,0.12)' }}>
             {opt.label}
           </button>
         ))}
       </div>
 
       {/* Profile location shortcut */}
-      {profileLoc && !activeLat && (
+      {profileLoc && !hasLocation && (
         <button
           onClick={() => router.push(buildUrl({ lat: profileLoc.lat, lng: profileLoc.lng, radius: profileLoc.radius, page: undefined }))}
           className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm transition-all w-fit"
-          style={{ background: 'rgba(76,111,113,0.2)', color: '#c9d3d4', border: '1px solid rgba(76,111,113,0.4)' }}
-        >
+          style={{ background: 'rgba(76,111,113,0.2)', color: '#c9d3d4', border: '1px solid rgba(76,111,113,0.4)' }}>
           📍 Gebruik mijn locatie ({profileLoc.postcode}, {profileLoc.radius} km)
         </button>
       )}
 
-      {/* Location row */}
-      <form onSubmit={handleLocation} className="flex flex-wrap gap-2 items-center">
-        <input
-          type="text"
-          value={postcode}
-          onChange={(e) => setPostcode(e.target.value)}
-          placeholder={hasLocation ? `Straal: ${activeRadius} km actief` : 'Postcode of stad…'}
-          className="px-4 py-2 rounded-xl text-sm outline-none"
-          style={{
-            background: 'rgba(201,211,212,0.08)',
-            border: `1px solid ${hasLocation ? 'rgba(76,111,113,0.6)' : 'rgba(201,211,212,0.15)'}`,
-            color: '#e8f0f0',
-            width: '180px',
-          }}
-        />
-        <select
-          value={radius}
-          onChange={(e) => setRadius(e.target.value)}
-          className="px-3 py-2 rounded-xl text-sm outline-none"
-          style={{ background: 'rgba(201,211,212,0.08)', border: '1px solid rgba(201,211,212,0.15)', color: '#e8f0f0' }}
-        >
-          {[5, 10, 20, 30, 50].map((r) => (
-            <option key={r} value={r}>{r} km</option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          disabled={locating}
-          className="px-4 py-2 rounded-xl text-sm font-medium"
-          style={{ background: '#4c6f71', color: '#c9d3d4', opacity: locating ? 0.6 : 1 }}
-        >
-          {locating ? '…' : '📍 Zoek'}
-        </button>
-        {hasLocation && (
-          <button
-            type="button"
-            onClick={clearLocation}
-            className="px-3 py-2 rounded-xl text-sm"
-            style={{ color: 'rgba(232,240,240,0.5)', border: '1px solid rgba(201,211,212,0.15)' }}
-          >
+      {/* Active location bar */}
+      {hasLocation && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-sm" style={{ color: 'rgba(232,240,240,0.55)' }}>
+            📍 Straal {activeRadius ?? '25'} km actief
+          </span>
+          <button onClick={() => setShowCities(!showCities)}
+            className="px-3 py-1 rounded-lg text-xs"
+            style={{ background: 'rgba(201,211,212,0.08)', color: '#c9d3d4', border: '1px solid rgba(201,211,212,0.15)' }}>
+            Andere stad
+          </button>
+          <button onClick={clearLocation} className="px-3 py-1 rounded-lg text-xs"
+            style={{ color: 'rgba(232,240,240,0.45)', border: '1px solid rgba(201,211,212,0.12)' }}>
             ✕ wis locatie
           </button>
-        )}
-      </form>
-      {locError && <p className="text-xs" style={{ color: '#e87070' }}>{locError}</p>}
-      {hasLocation && (
-        <p className="text-xs" style={{ color: 'rgba(232,240,240,0.4)' }}>
-          Events binnen {activeRadius} km van je locatie
-        </p>
+        </div>
+      )}
+
+      {/* City picker — shown when no location, or when "Andere stad" is clicked */}
+      {(!hasLocation || showCities) && (
+        <div className="rounded-2xl p-4" style={{ background: 'rgba(201,211,212,0.05)', border: '1px solid rgba(201,211,212,0.1)' }}>
+          <p className="text-xs mb-3" style={{ color: 'rgba(232,240,240,0.4)' }}>
+            Kies een stad of typ een postcode
+          </p>
+          {/* Popular cities */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {POPULAR_CITIES.map((c) => (
+              <button key={c.name} onClick={() => pickCity(c)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium transition-all hover:opacity-80"
+                style={{ background: 'rgba(201,211,212,0.09)', color: '#c9d3d4', border: '1px solid rgba(201,211,212,0.18)' }}>
+                {c.name}
+              </button>
+            ))}
+          </div>
+          {/* Postcode form */}
+          <form onSubmit={handleLocation} className="flex flex-wrap gap-2 items-center">
+            <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)}
+              placeholder="Andere postcode of stad…"
+              className="px-4 py-2 rounded-xl text-sm outline-none"
+              style={{ background: 'rgba(201,211,212,0.08)', border: '1px solid rgba(201,211,212,0.15)', color: '#e8f0f0', width: '200px' }} />
+            <select value={radius} onChange={(e) => setRadius(e.target.value)}
+              className="px-3 py-2 rounded-xl text-sm outline-none"
+              style={{ background: 'rgba(201,211,212,0.08)', border: '1px solid rgba(201,211,212,0.15)', color: '#e8f0f0' }}>
+              {[5, 10, 20, 30, 50, 75].map((r) => <option key={r} value={r}>{r} km</option>)}
+            </select>
+            <button type="submit" disabled={locating || !postcode.trim()}
+              className="px-4 py-2 rounded-xl text-sm font-medium"
+              style={{ background: '#4c6f71', color: '#c9d3d4', opacity: locating || !postcode.trim() ? 0.5 : 1 }}>
+              {locating ? '…' : '📍 Zoek'}
+            </button>
+            {showCities && (
+              <button type="button" onClick={() => setShowCities(false)} className="px-3 py-2 text-sm"
+                style={{ color: 'rgba(232,240,240,0.4)' }}>
+                Annuleren
+              </button>
+            )}
+          </form>
+          {locError && <p className="text-xs mt-2" style={{ color: '#e87070' }}>{locError}</p>}
+        </div>
       )}
     </div>
   );
