@@ -189,12 +189,16 @@ export default function PersonalizedHome() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventsPage, setEventsPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
 
   const PAGE_SIZE = 48;
 
-  const fetchEvents = useCallback(async (p: Profile, cat: string | null, date: string | null, page = 0) => {
+  const fetchEvents = useCallback(async (
+    p: Profile,
+    cat: string | null,
+    date: string | null,
+    startFrom = 0,
+  ) => {
     if (!p.lat || !p.lng) return;
     setEventsLoading(true);
     const sb = createClient(SB_URL, SB_KEY);
@@ -209,7 +213,7 @@ export default function PersonalizedHome() {
       .gte("venue_lat", box.minLat).lte("venue_lat", box.maxLat)
       .gte("venue_lng", box.minLng).lte("venue_lng", box.maxLng)
       .order("event_date", { ascending: true })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+      .range(startFrom, startFrom + PAGE_SIZE); // fetches PAGE_SIZE+1 rows to detect hasMore
 
     q = dr ? q.gte("event_date", dr.from).lt("event_date", dr.to)
             : q.gt("event_date", new Date().toISOString());
@@ -219,10 +223,14 @@ export default function PersonalizedHome() {
     if (error) { console.error("fetchEvents error:", error); setEventsLoading(false); return; }
     const results = data ?? [];
     const more = results.length > PAGE_SIZE;
-    const page_results = more ? results.slice(0, PAGE_SIZE) : results;
-    setEvents(page === 0 ? page_results : (prev) => [...prev, ...page_results]);
+    const batch = more ? results.slice(0, PAGE_SIZE) : results;
+
+    if (startFrom === 0) {
+      setEvents(batch);
+    } else {
+      setEvents((prev) => [...prev, ...batch]);
+    }
     setHasMore(more);
-    setEventsPage(page);
     setEventsLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -253,7 +261,7 @@ export default function PersonalizedHome() {
     setProfile(p);
     setEditing(false);
     setLocError("");
-    fetchEvents(p, activeCat, activeDate, 0);
+    fetchEvents(p, activeCat, activeDate);
   }
 
   function pickCity(city: { name: string; lat: number; lng: number }) {
@@ -473,7 +481,7 @@ export default function PersonalizedHome() {
               {hasMore && (
                 <div className="flex justify-center mb-10">
                   <button
-                    onClick={() => fetchEvents(profile!, activeCat, activeDate, eventsPage + 1)}
+                    onClick={() => fetchEvents(profile!, activeCat, activeDate, events.length)}
                     className="px-8 py-3 rounded-xl text-sm font-semibold"
                     style={{ background: "rgba(201,211,212,0.08)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.18)" }}>
                     Volgende 48 events →
