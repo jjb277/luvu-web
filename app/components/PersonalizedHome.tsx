@@ -209,24 +209,24 @@ export default function PersonalizedHome() {
       .gte("venue_lat", box.minLat).lte("venue_lat", box.maxLat)
       .gte("venue_lng", box.minLng).lte("venue_lng", box.maxLng)
       .order("event_date", { ascending: true })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE); // +1 over PAGE_SIZE to detect hasMore
+      .limit(PAGE_SIZE + 1)
+      .offset(page * PAGE_SIZE);
 
     q = dr ? q.gte("event_date", dr.from).lt("event_date", dr.to)
             : q.gt("event_date", new Date().toISOString());
     if (cat) q = q.eq("category", cat);
 
-    const { data } = await q;
+    const { data, error } = await q;
+    if (error) { console.error("fetchEvents error:", error); setEventsLoading(false); return; }
     const results = data ?? [];
     const more = results.length > PAGE_SIZE;
-    if (page === 0) {
-      setEvents(more ? results.slice(0, PAGE_SIZE) : results);
-    } else {
-      setEvents((prev) => [...prev, ...(more ? results.slice(0, PAGE_SIZE) : results)]);
-    }
+    const page_results = more ? results.slice(0, PAGE_SIZE) : results;
+    setEvents(page === 0 ? page_results : (prev) => [...prev, ...page_results]);
     setHasMore(more);
     setEventsPage(page);
     setEventsLoading(false);
-  }, [PAGE_SIZE]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -419,6 +419,13 @@ export default function PersonalizedHome() {
 
       {/* ── Category filter (always visible) ────────────── */}
       <div className="flex flex-wrap gap-2 mb-6">
+        <button onClick={() => { setActiveCat(null); if (profile?.lat) fetchEvents(profile, null, activeDate, 0); }}
+          className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:opacity-90"
+          style={!activeCat
+            ? { background: "#4c6f71", color: "#c9d3d4" }
+            : { background: "rgba(201,211,212,0.1)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.2)" }}>
+          Alle
+        </button>
         {CATEGORIES.map((c) => (
           <button key={c.value} onClick={() => handleCat(c.value)}
             className="px-4 py-2 rounded-full text-sm font-medium transition-all hover:opacity-90"
