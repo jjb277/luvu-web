@@ -189,8 +189,12 @@ export default function PersonalizedHome() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsPage, setEventsPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
-  const fetchEvents = useCallback(async (p: Profile, cat: string | null, date: string | null) => {
+  const PAGE_SIZE = 48;
+
+  const fetchEvents = useCallback(async (p: Profile, cat: string | null, date: string | null, page = 0) => {
     if (!p.lat || !p.lng) return;
     setEventsLoading(true);
     const sb = createClient(SB_URL, SB_KEY);
@@ -205,16 +209,24 @@ export default function PersonalizedHome() {
       .gte("venue_lat", box.minLat).lte("venue_lat", box.maxLat)
       .gte("venue_lng", box.minLng).lte("venue_lng", box.maxLng)
       .order("event_date", { ascending: true })
-      .limit(48);
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE); // +1 over PAGE_SIZE to detect hasMore
 
     q = dr ? q.gte("event_date", dr.from).lt("event_date", dr.to)
             : q.gt("event_date", new Date().toISOString());
     if (cat) q = q.eq("category", cat);
 
     const { data } = await q;
-    setEvents(data ?? []);
+    const results = data ?? [];
+    const more = results.length > PAGE_SIZE;
+    if (page === 0) {
+      setEvents(more ? results.slice(0, PAGE_SIZE) : results);
+    } else {
+      setEvents((prev) => [...prev, ...(more ? results.slice(0, PAGE_SIZE) : results)]);
+    }
+    setHasMore(more);
+    setEventsPage(page);
     setEventsLoading(false);
-  }, []);
+  }, [PAGE_SIZE]);
 
   useEffect(() => {
     setMounted(true);
@@ -242,7 +254,7 @@ export default function PersonalizedHome() {
     setProfile(p);
     setEditing(false);
     setLocError("");
-    fetchEvents(p, activeCat, activeDate);
+    fetchEvents(p, activeCat, activeDate, 0);
   }
 
   function pickCity(city: { name: string; lat: number; lng: number }) {
@@ -272,13 +284,13 @@ export default function PersonalizedHome() {
   function handleCat(cat: string) {
     const next = activeCat === cat ? null : cat;
     setActiveCat(next);
-    if (profile?.lat) fetchEvents(profile, next, activeDate);
+    if (profile?.lat) fetchEvents(profile, next, activeDate, 0);
   }
 
   function handleDate(val: string) {
     const next = activeDate === val ? null : val;
     setActiveDate(next);
-    if (profile?.lat) fetchEvents(profile, activeCat, next);
+    if (profile?.lat) fetchEvents(profile, activeCat, next, 0);
   }
 
   // hasLocation only meaningful after mount (localStorage read)
@@ -302,7 +314,7 @@ export default function PersonalizedHome() {
                 saveProfile(updated);
                 setProfile(updated);
                 setRadius(e.target.value);
-                fetchEvents(updated, activeCat, activeDate);
+                fetchEvents(updated, activeCat, activeDate, 0);
               }}
               className="px-2 py-0.5 rounded-lg text-xs outline-none"
               style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(76,111,113,0.4)", color: "#c9d3d4" }}>
@@ -395,7 +407,7 @@ export default function PersonalizedHome() {
             {getUpcomingMonths().map((m) => <option key={m.value} value={m.value} style={{ background: "#1e3132", color: "#c9d3d4" }}>{m.label}</option>)}
           </select>
           {/* All */}
-          <button onClick={() => { setActiveDate(null); if (profile?.lat) fetchEvents(profile, activeCat, null); }}
+          <button onClick={() => { setActiveDate(null); if (profile?.lat) fetchEvents(profile, activeCat, null, 0); }}
             className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
             style={!activeDate
               ? { background: "#4c6f71", color: "#c9d3d4" }
@@ -448,9 +460,21 @@ export default function PersonalizedHome() {
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : events.length ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-              {events.map((e) => <EventCard key={e.id} e={e} />)}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+                {events.map((e) => <EventCard key={e.id} e={e} />)}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center mb-10">
+                  <button
+                    onClick={() => fetchEvents(profile!, activeCat, activeDate, eventsPage + 1)}
+                    className="px-8 py-3 rounded-xl text-sm font-semibold"
+                    style={{ background: "rgba(201,211,212,0.08)", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.18)" }}>
+                    Volgende 48 events →
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-14 rounded-2xl mb-10"
               style={{ background: "rgba(201,211,212,0.04)", border: "1px solid rgba(201,211,212,0.1)" }}>

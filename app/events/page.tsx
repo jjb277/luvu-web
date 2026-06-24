@@ -155,9 +155,9 @@ export default async function EventsPage({
 
         {/* Search */}
         <form method="GET" className="mb-6 flex gap-3">
-          <input type="text" name="q" defaultValue={q} placeholder="Zoek op titel…"
-            className="flex-1 max-w-sm px-4 py-2.5 rounded-xl text-sm outline-none"
-            style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(201,211,212,0.15)", color: "#e8f0f0" }} />
+          <input type="text" name="q" defaultValue={q} placeholder="Zoek op artiest, event of venue…"
+            className="flex-1 max-w-lg px-4 py-3 rounded-xl text-sm outline-none"
+            style={{ background: "rgba(201,211,212,0.08)", border: "1px solid rgba(201,211,212,0.2)", color: "#e8f0f0" }} />
           {cat && <input type="hidden" name="cat" value={cat} />}
           {date && <input type="hidden" name="date" value={date} />}
           {lat && <input type="hidden" name="lat" value={lat} />}

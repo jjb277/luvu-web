@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PersonalizedHome from "./components/PersonalizedHome";
+import SearchBar from "./components/SearchBar";
 
 export default function Home() {
   return (
@@ -31,9 +32,10 @@ export default function Home() {
             Ontdek events<br />
             <span style={{ color: "#c9d3d4" }}>in jouw buurt</span>
           </h1>
-          <p className="text-base max-w-lg mb-0" style={{ color: "rgba(232,240,240,0.55)" }}>
+          <p className="text-base max-w-lg mb-6" style={{ color: "rgba(232,240,240,0.55)" }}>
             Concerts, theater, comedy, dans en meer — gepersonaliseerd op jouw locatie.
           </p>
+          <SearchBar />
         </div>
 
         {/* Personalized section: region picker + events */}
