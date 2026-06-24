@@ -209,8 +209,7 @@ export default function PersonalizedHome() {
       .gte("venue_lat", box.minLat).lte("venue_lat", box.maxLat)
       .gte("venue_lng", box.minLng).lte("venue_lng", box.maxLng)
       .order("event_date", { ascending: true })
-      .limit(PAGE_SIZE + 1)
-      .offset(page * PAGE_SIZE);
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
     q = dr ? q.gte("event_date", dr.from).lt("event_date", dr.to)
             : q.gt("event_date", new Date().toISOString());
