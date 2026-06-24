@@ -390,9 +390,9 @@ export default function PersonalizedHome() {
             className="px-3 py-1.5 rounded-full text-sm font-medium outline-none"
             style={activeDate?.startsWith("month-")
               ? { background: "#4c6f71", color: "#c9d3d4" }
-              : { background: "rgba(201,211,212,0.07)", color: "rgba(232,240,240,0.6)", border: "1px solid rgba(201,211,212,0.12)" }}>
-            <option value="">Kies maand</option>
-            {getUpcomingMonths().map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              : { background: "#1e3132", color: "#c9d3d4", border: "1px solid rgba(201,211,212,0.2)" }}>
+            <option value="" style={{ background: "#1e3132", color: "#c9d3d4" }}>Kies maand</option>
+            {getUpcomingMonths().map((m) => <option key={m.value} value={m.value} style={{ background: "#1e3132", color: "#c9d3d4" }}>{m.label}</option>)}
           </select>
           {/* All */}
           <button onClick={() => { setActiveDate(null); if (profile?.lat) fetchEvents(profile, activeCat, null); }}

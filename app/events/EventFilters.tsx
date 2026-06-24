@@ -139,9 +139,9 @@ export default function EventFilters({ activeDate, activeLat, activeLng, activeR
           className="px-3 py-1.5 rounded-full text-sm font-medium outline-none"
           style={activeDate?.startsWith('month-')
             ? { background: '#4c6f71', color: '#c9d3d4' }
-            : { background: 'rgba(201,211,212,0.07)', color: 'rgba(232,240,240,0.6)', border: '1px solid rgba(201,211,212,0.12)' }}>
-          <option value=''>Kies maand</option>
-          {getUpcomingMonths().map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            : { background: '#1e3132', color: '#c9d3d4', border: '1px solid rgba(201,211,212,0.2)' }}>
+          <option value='' style={{ background: '#1e3132', color: '#c9d3d4' }}>Kies maand</option>
+          {getUpcomingMonths().map((m) => <option key={m.value} value={m.value} style={{ background: '#1e3132', color: '#c9d3d4' }}>{m.label}</option>)}
         </select>
         {/* All */}
         <button onClick={() => router.push(buildUrl({ date: undefined, page: undefined }))}
@@ -171,7 +171,7 @@ export default function EventFilters({ activeDate, activeLat, activeLng, activeR
             value={activeRadius ?? '25'}
             onChange={(e) => router.push(buildUrl({ radius: e.target.value, page: undefined }))}
             className="px-3 py-1 rounded-lg text-sm outline-none"
-            style={{ background: 'rgba(201,211,212,0.08)', border: '1px solid rgba(76,111,113,0.5)', color: '#c9d3d4' }}>
+            style={{ background: '#1e3132', border: '1px solid rgba(76,111,113,0.5)', color: '#c9d3d4' }}>
             {[5, 10, 20, 30, 50, 75, 100].map((r) => <option key={r} value={r}>{r} km</option>)}
           </select>
           <button onClick={() => setShowCities(!showCities)}
@@ -210,7 +210,7 @@ export default function EventFilters({ activeDate, activeLat, activeLng, activeR
               style={{ background: 'rgba(201,211,212,0.08)', border: '1px solid rgba(201,211,212,0.15)', color: '#e8f0f0', width: '200px' }} />
             <select value={radius} onChange={(e) => setRadius(e.target.value)}
               className="px-3 py-2 rounded-xl text-sm outline-none"
-              style={{ background: 'rgba(201,211,212,0.08)', border: '1px solid rgba(201,211,212,0.15)', color: '#e8f0f0' }}>
+              style={{ background: '#1e3132', border: '1px solid rgba(201,211,212,0.2)', color: '#e8f0f0' }}>
               {[5, 10, 20, 30, 50, 75].map((r) => <option key={r} value={r}>{r} km</option>)}
             </select>
             <button type="submit" disabled={locating || !postcode.trim()}
