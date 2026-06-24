@@ -205,7 +205,7 @@ export default function PersonalizedHome() {
       .gte("venue_lat", box.minLat).lte("venue_lat", box.maxLat)
       .gte("venue_lng", box.minLng).lte("venue_lng", box.maxLng)
       .order("event_date", { ascending: true })
-      .limit(12);
+      .limit(48);
 
     q = dr ? q.gte("event_date", dr.from).lt("event_date", dr.to)
             : q.gt("event_date", new Date().toISOString());
@@ -434,7 +434,7 @@ export default function PersonalizedHome() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold" style={{ color: "#e8f0f0" }}>
               {eventsLoading ? "Laden…"
-                : events.length ? `${events.length} events${activeDate ? ` · ${DATE_OPTIONS.find(d => d.value === activeDate)?.label.toLowerCase()}` : " in jouw buurt"}`
+                : events.length ? `${events.length}${events.length === 48 ? "+" : ""} events${activeDate ? ` · ${DATE_OPTIONS.find(d => d.value === activeDate)?.label.toLowerCase()}` : " in jouw buurt"}`
                 : "Geen events gevonden"}
             </h2>
             {!eventsLoading && events.length > 0 && (
