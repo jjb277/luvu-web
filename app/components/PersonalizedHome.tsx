@@ -42,17 +42,19 @@ function getUpcomingMonths(n = 12) {
 }
 
 const CATEGORIES = [
-  { label: "Muziek",  value: "Music",   icon: "🎵" },
-  { label: "Theater", value: "Theater", icon: "🎭" },
-  { label: "Comedy",  value: "Comedy",  icon: "😄" },
-  { label: "Dans",    value: "Dance",   icon: "💃" },
-  { label: "Familie", value: "Family",  icon: "👨‍👩‍👧" },
-  { label: "Film",    value: "Film",    icon: "🎬" },
+  { label: "Muziek",   value: "Music",           icon: "🎵" },
+  { label: "Theater",  value: "Theater",          icon: "🎭" },
+  { label: "Comedy",   value: "Comedy",           icon: "😄" },
+  { label: "Dans",     value: "Dance",            icon: "💃" },
+  { label: "Familie",  value: "Family",           icon: "👨‍👩‍👧" },
+  { label: "Film",     value: "Film",             icon: "🎬" },
+  { label: "Museum",   value: "Museum",           icon: "🏛️" },
+  { label: "Festival", value: "Festival",         icon: "🎪" },
 ];
 
 const CAT_ICONS: Record<string, string> = {
   Music: "🎵", Theater: "🎭", Comedy: "😄", Dance: "💃",
-  Family: "👨‍👩‍👧", Film: "🎬", Other: "✨",
+  Family: "👨‍👩‍👧", Film: "🎬", Museum: "🏛️", Festival: "🎪", Other: "✨",
 };
 
 type Profile = {

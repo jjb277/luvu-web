@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 
 const PROFILE_KEY = "luvu-profile";
 const CATEGORIES = [
-  { value: "Music", label: "Muziek", icon: "🎵" },
-  { value: "Theater", label: "Theater", icon: "🎭" },
-  { value: "Comedy", label: "Comedy", icon: "😄" },
-  { value: "Dance", label: "Dans", icon: "💃" },
-  { value: "Family", label: "Familie", icon: "👨‍👩‍👧" },
-  { value: "Film", label: "Film", icon: "🎬" },
-  { value: "Other", label: "Overige", icon: "✨" },
+  { value: "Music",   label: "Muziek",   icon: "🎵" },
+  { value: "Theater", label: "Theater",  icon: "🎭" },
+  { value: "Comedy",  label: "Comedy",   icon: "😄" },
+  { value: "Dance",   label: "Dans",     icon: "💃" },
+  { value: "Family",  label: "Familie",  icon: "👨‍👩‍👧" },
+  { value: "Film",    label: "Film",     icon: "🎬" },
+  { value: "Museum",  label: "Museum",   icon: "🏛️" },
+  { value: "Festival",label: "Festival", icon: "🎪" },
+  { value: "Other",   label: "Overige",  icon: "✨" },
 ];
 
 type Profile = {

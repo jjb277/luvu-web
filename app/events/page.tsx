@@ -12,10 +12,10 @@ const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SB_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const PAGE_SIZE = 48;
-const CATEGORIES = ["Alle", "Music", "Theater", "Comedy", "Dance", "Family", "Film", "Other"];
+const CATEGORIES = ["Alle", "Music", "Theater", "Comedy", "Dance", "Family", "Film", "Museum", "Festival", "Other"];
 const CAT_ICONS: Record<string, string> = {
   Music: "🎵", Theater: "🎭", Comedy: "😄", Dance: "💃",
-  Family: "👨‍👩‍👧", Film: "🎬", Other: "✨",
+  Family: "👨‍👩‍👧", Film: "🎬", Museum: "🏛️", Festival: "🎪", Other: "✨",
 };
 
 function formatDate(dateStr: string) {
