@@ -91,7 +91,6 @@ export default async function EventsPage({
     .from("events")
     .select("id, title, short_tagline, category, event_date, venue_name, city, base_price, primary_image_url", { count: "exact" })
     .in("visibility_status", ["live", "public"])
-    .not("primary_image_url", "is", null)
     .order("event_date", { ascending: true })
     .range(from, to);
 
@@ -193,9 +192,13 @@ export default async function EventsPage({
               <Link key={e.id} href={`/events/${e.id}`}
                 className="rounded-2xl overflow-hidden flex flex-col group transition-transform hover:-translate-y-0.5"
                 style={{ background: "rgba(201,211,212,0.06)", border: "1px solid rgba(201,211,212,0.12)" }}>
-                <div className="relative h-44 overflow-hidden" style={{ background: "#1a2a2b" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={e.primary_image_url!} alt={e.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <div className="relative h-44 overflow-hidden flex items-center justify-center" style={{ background: "#1a2a2b" }}>
+                  {e.primary_image_url ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={e.primary_image_url} alt={e.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <span className="text-5xl select-none">{CAT_ICONS[e.category ?? ""] ?? "🎟️"}</span>
+                  )}
                   <div className="absolute top-3 left-3">
                     <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: "rgba(42,63,64,0.85)", color: "#c9d3d4" }}>
                       {CAT_ICONS[e.category ?? ""] ?? ""} {e.category}
